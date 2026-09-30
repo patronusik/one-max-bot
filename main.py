@@ -5,7 +5,7 @@ from maxbot.dispatcher import Dispatcher
 from maxbot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 # Токен берётся из переменной окружения на Bothost
-BOT_TOKEN = os.getenv("MAX_TOKEN")
+MAX_TOKEN = os.getenv("MAX_TOKEN")
 
 bot = Bot(MAX_TOKEN)
 dp = Dispatcher(bot)
