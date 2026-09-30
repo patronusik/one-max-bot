@@ -1,4 +1,5 @@
 import os
+import asyncio
 from maxbot.bot import Bot
 from maxbot.dispatcher import Dispatcher
 from maxbot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
@@ -10,8 +11,8 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # --- НАСТРОЙКИ ---
-CHANNEL_URL = "https://max.ru/твой_канал"
-SITE_URL = "https://example.com"
+CHANNEL_URL = "https://max.ru/твой_канал"  # Ссылка на твой канал
+SITE_URL = "https://example.com"            # Ссылка на официальный сайт
 
 # --- FAQ ---
 FAQ_DATA = {
@@ -42,7 +43,7 @@ faq_kb = InlineKeyboardMarkup(inline_keyboard=[
 
 # --- ОБРАБОТЧИКИ ---
 
-# ВАЖНО: @dp.bot_started БЕЗ скобок
+# ВАЖНО: @dp.bot_started БЕЗ скобок (в umaxbot это свойство, а не метод-фабрика)
 @dp.bot_started
 async def on_bot_started(update):
     """Срабатывает при нажатии кнопки 'Начать' в MAX"""
@@ -91,6 +92,6 @@ async def on_callback(cb):
             reply_markup=main_menu_kb
         )
 
-# --- ЗАПУСК (единственный правильный способ для umaxbot) ---
+# --- ЗАПУСК ---
 if __name__ == "__main__":
-    dp.run_polling()
+    asyncio.run(dp.run_polling())
