@@ -3,17 +3,14 @@ from maxbot.bot import Bot
 from maxbot.dispatcher import Dispatcher
 from maxbot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
-# Токен будет браться из переменной окружения на Bothost
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# --- НАСТРОЙКИ (поменяй под себя) ---
-CHANNEL_URL = "https://max.ru/твой_канал"  # Ссылка на твой канал
-SITE_URL = "https://example.com"            # Ссылка на официальный сайт
+CHANNEL_URL = "https://max.ru/твой_канал"
+SITE_URL = "https://example.com"
 
-# --- FAQ (вопрос-ответ) ---
 FAQ_DATA = {
     "Как заказать?": "Чтобы заказать, напиши нам на почту example@mail.ru или позвони по телефону +7 (999) 123-45-67.",
     "Сколько стоит?": "Актуальные цены указаны на нашем сайте: " + SITE_URL,
@@ -21,20 +18,16 @@ FAQ_DATA = {
     "Есть ли доставка?": "Да, доставка по всей России. Сроки: 1-3 дня."
 }
 
-# --- КЛАВИАТУРЫ ---
-# Кнопка проверки подписки
 check_sub_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_URL)],
     [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_sub")]
 ])
 
-# Главное меню
 main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🌐 Официальный сайт", url=SITE_URL)],
     [InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu")]
 ])
 
-# Меню FAQ
 faq_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="Как заказать?", callback_data="faq_Как заказать?")],
     [InlineKeyboardButton(text="Сколько стоит?", callback_data="faq_Сколько стоит?")],
@@ -43,45 +36,44 @@ faq_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_menu")]
 ])
 
-# --- ОБРАБОТЧИКИ ---
+# ===== ГЛАВНОЕ ИСПРАВЛЕНИЕ =====
+# Вместо @dp.message() используем @dp.bot_started()
+@dp.bot_started()
+async def on_bot_started(update):
+    """Срабатывает, когда пользователь нажимает кнопку 'Начать' в MAX"""
+    await bot.send_message(
+        chat_id=update.user.id,  # В MAX для личных сообщений используется user_id
+        text="Привет! Чтобы пользоваться ботом, подпишись на наш канал, а затем нажми кнопку «Я подписался».",
+        reply_markup=check_sub_kb
+    )
+
+# Оставляем @dp.message() для случая, если пользователь напишет текст после запуска
 @dp.message()
 async def on_message(message: Message):
-    """Срабатывает на любое сообщение от пользователя (включая /start)"""
     await bot.send_message(
         chat_id=message.sender.id,
-        text="Привет! Чтобы пользоваться ботом, подпишись на наш канал, а затем нажми кнопку «Я подписался».",
+        text="Нажми кнопку ниже, чтобы начать.",
         reply_markup=check_sub_kb
     )
 
 @dp.callback()
 async def on_callback(cb):
-    """Срабатывает на нажатие инлайн-кнопок"""
-    
-    # Пользователь нажал "Я подписался" -> показываем главное меню
     if cb.payload == "check_sub":
-        # Здесь можно добавить реальную проверку через API MAX, но для простоты просто пускаем дальше
         await bot.send_message(
             chat_id=cb.user.id,
             text="Спасибо! Теперь тебе доступно меню:",
             reply_markup=main_menu_kb
         )
-    
-    # Пользователь нажал "FAQ" -> показываем список вопросов
     elif cb.payload == "faq_menu":
         await bot.send_message(
             chat_id=cb.user.id,
             text="Выбери вопрос, который тебя интересует:",
             reply_markup=faq_kb
         )
-    
-    # Пользователь нажал один из вопросов FAQ
     elif cb.payload.startswith("faq_"):
-        # Вырезаем сам вопрос из payload (убираем "faq_")
         question = cb.payload[4:]
         answer = FAQ_DATA.get(question, "Извини, не знаю ответа на этот вопрос.")
         await bot.send_message(chat_id=cb.user.id, text=answer)
-    
-    # Пользователь нажал "Назад в меню"
     elif cb.payload == "back_to_menu":
         await bot.send_message(
             chat_id=cb.user.id,
@@ -89,5 +81,6 @@ async def on_callback(cb):
             reply_markup=main_menu_kb
         )
 
+# ===== ЗАПУСК =====
 if __name__ == "__main__":
-    dp.run_polling(bot)
+    dp.run_polling()
