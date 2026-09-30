@@ -1,20 +1,19 @@
 import os
-import asyncio
 from maxbot.bot import Bot
 from maxbot.dispatcher import Dispatcher
 from maxbot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
-# Токен будет браться из переменной окружения на Bothost
+# Токен берётся из переменной окружения на Bothost
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# --- НАСТРОЙКИ (поменяй под себя) ---
-CHANNEL_URL = "https://max.ru/твой_канал"  # Ссылка на твой канал
-SITE_URL = "https://example.com"            # Ссылка на официальный сайт
+# --- НАСТРОЙКИ ---
+CHANNEL_URL = "https://max.ru/твой_канал"
+SITE_URL = "https://example.com"
 
-# --- FAQ (вопрос-ответ) ---
+# --- FAQ ---
 FAQ_DATA = {
     "Как заказать?": "Чтобы заказать, напиши нам на почту example@mail.ru или позвони по телефону +7 (999) 123-45-67.",
     "Сколько стоит?": "Актуальные цены указаны на нашем сайте: " + SITE_URL,
@@ -23,19 +22,16 @@ FAQ_DATA = {
 }
 
 # --- КЛАВИАТУРЫ ---
-# Кнопка проверки подписки
 check_sub_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_URL)],
     [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_sub")]
 ])
 
-# Главное меню
 main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🌐 Официальный сайт", url=SITE_URL)],
     [InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu")]
 ])
 
-# Меню FAQ
 faq_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="Как заказать?", callback_data="faq_Как заказать?")],
     [InlineKeyboardButton(text="Сколько стоит?", callback_data="faq_Сколько стоит?")],
@@ -49,7 +45,7 @@ faq_kb = InlineKeyboardMarkup(inline_keyboard=[
 # ВАЖНО: @dp.bot_started БЕЗ скобок
 @dp.bot_started
 async def on_bot_started(update):
-    """Срабатывает, когда пользователь нажимает кнопку 'Начать' в MAX"""
+    """Срабатывает при нажатии кнопки 'Начать' в MAX"""
     await bot.send_message(
         chat_id=update.user.id,
         text="Привет! Чтобы пользоваться ботом, подпишись на наш канал, а затем нажми кнопку «Я подписался».",
@@ -69,7 +65,6 @@ async def on_message(message: Message):
 async def on_callback(cb):
     """Срабатывает на нажатие инлайн-кнопок"""
     
-    # Пользователь нажал "Я подписался" -> показываем главное меню
     if cb.payload == "check_sub":
         await bot.send_message(
             chat_id=cb.user.id,
@@ -77,7 +72,6 @@ async def on_callback(cb):
             reply_markup=main_menu_kb
         )
     
-    # Пользователь нажал "FAQ" -> показываем список вопросов
     elif cb.payload == "faq_menu":
         await bot.send_message(
             chat_id=cb.user.id,
@@ -85,14 +79,11 @@ async def on_callback(cb):
             reply_markup=faq_kb
         )
     
-    # Пользователь нажал один из вопросов FAQ
     elif cb.payload.startswith("faq_"):
-        # Вырезаем сам вопрос из payload (убираем "faq_")
         question = cb.payload[4:]
         answer = FAQ_DATA.get(question, "Извини, не знаю ответа на этот вопрос.")
         await bot.send_message(chat_id=cb.user.id, text=answer)
     
-    # Пользователь нажал "Назад в меню"
     elif cb.payload == "back_to_menu":
         await bot.send_message(
             chat_id=cb.user.id,
@@ -100,17 +91,6 @@ async def on_callback(cb):
             reply_markup=main_menu_kb
         )
 
-# --- ЗАПУСК ---
-async def main():
-    # Удаляем старые webhook-подписки, чтобы polling работал
-    try:
-        await bot.delete_webhook()
-        print("Webhook удалён")
-    except Exception as e:
-        print(f"Webhook cleanup: {e}")
-    
-    # Запускаем polling
-    await dp.start_polling()
-
+# --- ЗАПУСК (единственный правильный способ для umaxbot) ---
 if __name__ == "__main__":
-    asyncio.run(main())
+    dp.run_polling()
